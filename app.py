@@ -1,63 +1,78 @@
 import os
-import sqlite3
-from flask import Flask, render_template_string, request, redirect, url_for
+from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
-DB_FILE = "bot_database.db"
 
-# Database Initialize
-def init_db():
-    with sqlite3.connect(DB_FILE) as db:
-        db.execute("CREATE TABLE IF NOT EXISTS orders (id INTEGER PRIMARY KEY, package TEXT, status TEXT)")
-        db.commit()
+# Packages Data with your specific links
+PACKAGES = {
+    "CHILD": {
+        "name": "CHILD P@RN", 
+        "price": "₹59", 
+        "img": "https://telegra.ph/file/ed1b4760086c5f7808298.jpg" # Example Thumbnail
+    },
+    "mms": {
+        "name": "MMS ONLY", 
+        "price": "₹49", 
+        "img": "https://files.catbox.moe/ht1t5c.mp4" 
+    },
+    "viral": {
+        "name": "MMS + INSTA VIRAL", 
+        "price": "₹99", 
+        "img": "https://files.catbox.moe/agntne.mp4"
+    }
+}
 
-init_db()
+QR_LINK = "https://pic-link-bot.lovable.app/i/telegram-1779456784703-bb360fdb.jpg"
 
-# HTML Template
 HTML_CODE = """
 <!DOCTYPE html>
 <html>
-<body style="font-family:sans-serif; text-align:center;">
+<head>
+    <style>
+        .card { border: 2px solid #333; margin: 20px; padding: 15px; border-radius: 10px; }
+        video, img { width: 150px; height: 150px; border-radius: 10px; }
+        button { background: #28a745; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body style="text-align:center; font-family:sans-serif;">
     <h1>Premium Content Store</h1>
-    {% for pkg, details in packages.items() %}
-        <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-            <h3>{{ details.name }} - {{ details.price }}</h3>
-            <form action="/buy" method="post">
+    {% for pkg, data in packages.items() %}
+        <div class="card">
+            {% if data.img.endswith('.mp4') %}
+                <video src="{{ data.img }}" controls></video>
+            {% else %}
+                <img src="{{ data.img }}" alt="img">
+            {% endif %}
+            <h3>{{ data.name }}</h3>
+            <p>Price: <b>{{ data.price }}</b></p>
+            <form action="/pay" method="post">
                 <input type="hidden" name="package" value="{{ pkg }}">
-                <button type="submit">Buy Now</button>
+                <button type="submit">UNLOCK PREMIUM</button>
             </form>
         </div>
     {% endfor %}
-    <hr>
-    <h2>Admin Area (Check Orders)</h2>
-    <a href="/admin">Click here to check payments</a>
 </body>
 </html>
 """
-
-PACKAGES = {
-    "CHILD": {"name": "CHILD P@RN", "price": "₹59"},
-    "mms": {"name": "MMS ONLY", "price": "₹49"},
-    "viral": {"name": "MMS + INSTA VIRAL", "price": "₹99"}
-}
 
 @app.route('/')
 def home():
     return render_template_string(HTML_CODE, packages=PACKAGES)
 
-@app.route('/buy', methods=['POST'])
-def buy():
-    pkg = request.form.get('package')
-    with sqlite3.connect(DB_FILE) as db:
-        db.execute("INSERT INTO orders (package, status) VALUES (?, ?)", (pkg, 'pending'))
-        db.commit()
-    return "<h3>Order Placed! Send payment to UPI: Q691189350@ybl. After payment, ask admin to check.</h3>"
-
-@app.route('/admin')
-def admin():
-    with sqlite3.connect(DB_FILE) as db:
-        orders = db.execute("SELECT * FROM orders").fetchall()
-    return render_template_string("<h1>Orders</h1>{% for o in orders %}<p>{{ o }}</p>{% endfor %}", orders=orders)
+@app.route('/pay', methods=['POST'])
+def pay():
+    pkg_key = request.form.get('package')
+    data = PACKAGES[pkg_key]
+    return f"""
+    <body style="text-align:center; font-family:sans-serif; padding: 20px;">
+        <h1>Payment Required</h1>
+        <h3>Pay {data['price']} for {data['name']}</h3>
+        <img src="{QR_LINK}" style="width:250px; border: 2px solid black;">
+        <p>UPI: <b>Q691189350@ybl</b></p>
+        <p style="color: red;">Screenshot bhejne ke baad admin se contact karein.</p>
+        <br><a href="/">🔙 Back to Home</a>
+    </body>
+    """
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
